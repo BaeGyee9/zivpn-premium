@@ -628,6 +628,28 @@ def build_view(msg="", err=""):
     listen_port=get_listen_port_from_config()
     stats = get_server_stats()
     
+    # ===== ADD SERVER IP FUNCTION =====
+    def get_server_ip():
+        """Get server IP address"""
+        try:
+            import socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip.strip()
+        except:
+            try:
+                import subprocess
+                result = subprocess.run(['curl', '-s', 'icanhazip.com'], capture_output=True, text=True, timeout=5)
+                if result.returncode == 0 and result.stdout.strip():
+                    return result.stdout.strip()
+            except:
+                pass
+            return "43.249.33.233"
+    
+    server_ip = get_server_ip()  # ဒါထည့်
+    
     view=[]
     today_date=datetime.now().date()
     
@@ -654,6 +676,7 @@ def build_view(msg="", err=""):
     html_template = load_html_template()
     return render_template_string(html_template, authed=True, logo=LOGO_URL, 
                                  users=view, msg=msg, err=err, today=today, stats=stats, 
+                                 server_ip=server_ip,  # ===== ဒီမှာ ထည့် =====
                                  t=t, lang=g.lang, theme=theme)
 
 @app.route("/", methods=["GET"])
