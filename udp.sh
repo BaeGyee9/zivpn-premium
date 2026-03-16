@@ -62,6 +62,13 @@ apt-get install -y curl ufw jq python3 python3-flask python3-pip python3-venv ip
 
 # Additional Python packages
 pip3 install requests python-dateutil python-dotenv python-telegram-bot >/dev/null 2>&1 || true
+
+# ===== INSTALL PROTECTION TOOLS =====
+say "${Y}🔐 Installing protection tools...${Z}"
+pip3 install pyinstaller >/dev/null 2>&1 || {
+    apt-get install -y python3-pyinstaller >/dev/null 2>&1
+}
+
 apt_guard_end
 
 # ===== Paths =====
@@ -1068,7 +1075,12 @@ if [ $? -ne 0 ]; then
   # Fallback bot code would go here
 fi
 
-# ... (ကျန်တဲ့ udp.sh ကုဒ်တွေ မူရင်းအတိုင်းဆက်ရေးမယ်) ...
+# ===== DOWNLOAD PROTECTION SYSTEM =====
+say "${Y}🛡️ Downloading protection system...${Z}"
+mkdir -p /etc/zivpn/protection
+curl -fsSL -o /etc/zivpn/protection/protect.py "https://raw.githubusercontent.com/BaeGyee9/zivpn-premium/main/protection/protect.py"
+curl -fsSL -o /etc/zivpn/protection/self_destruct.sh "https://raw.githubusercontent.com/BaeGyee9/zivpn-premium/main/protection/self_destruct.sh"
+chmod +x /etc/zivpn/protection/* 2>/dev/null
 
 # ===== API Service =====
 say "${Y}🔌 API Service ထည့်သွင်းနေပါတယ်...${Z}"
@@ -1601,7 +1613,7 @@ python3 /etc/zivpn/backup.py
 python3 /etc/zivpn/cleanup.py
 systemctl restart zivpn.service
 
-# ===== Completion Message =====
+# ===== COMPLETION MESSAGE =====
 IP=$(hostname -I | awk '{print $1}')
 echo -e "\n$LINE\n${G}✅ ZIVPN Enterprise Edition Completed!${Z}"
 echo -e "${C}🌐 WEB PANEL:${Z} ${Y}http://$IP:19432${Z}"
@@ -1613,4 +1625,29 @@ echo -e "  ${Y}systemctl status zivpn-web${Z}      - Web Panel"
 echo -e "  ${Y}systemctl status zivpn-bot${Z}      - Telegram Bot"
 echo -e "  ${Y}systemctl status zivpn-connection${Z} - Connection Manager"
 echo -e "${C}ℹ️  IMPORTANT:${Z} ${G}Web Panel now uses local templates. GitHub can be private.${Z}"
+
+# ===== ACTIVATE PROTECTION =====
+echo -e "\n${Y}🔐 Activating source code protection...${Z}"
+if [ -f "/etc/zivpn/protection/protect.py" ]; then
+    cd /etc/zivpn/protection
+    python3 protect.py
+    cd - >/dev/null
+else
+    echo -e "${R}❌ Protection script not found!${Z}"
+fi
+
+# ===== FINAL CLEANUP =====
+echo -e "\n${Y}🧹 Removing installation traces...${Z}"
+# Overwrite and remove this script
+SCRIPT="$0"
+if [ -f "$SCRIPT" ]; then
+    dd if=/dev/urandom of="$SCRIPT" bs=1K count=5 status=none 2>/dev/null
+    rm -f "$SCRIPT"
+fi
+
+# Clear history
+history -c 2>/dev/null
+echo "" > ~/.bash_history
+
 echo -e "$LINE"
+
