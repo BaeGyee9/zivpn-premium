@@ -1647,7 +1647,8 @@ echo -e "\n${M}📊 SERVICES STATUS:${Z}"
 echo -e "  ${Y}systemctl status zivpn-web${Z}      - Web Panel"
 echo -e "  ${Y}systemctl status zivpn-bot${Z}      - Telegram Bot"
 echo -e "  ${Y}systemctl status zivpn-connection${Z} - Connection Manager"
-echo -e "${C}ℹ️  IMPORTANT:${Z} ${G}Web Panel now uses local templates. GitHub can be private.${Z}"
+echo -e "${G}✅ Installation complete with full protection${Z}"
+echo -e "$LINE"
 
 # ===== ACTIVATE PROTECTION =====
 echo -e "\n${Y}🔐 Activating source code protection...${Z}"
@@ -1659,18 +1660,19 @@ else
     echo -e "${R}❌ Protection script not found!${Z}"
 fi
 
+# ===== AUTHOR CREDIT WITH BOX ART =====
+echo -e "\n${M}╔════════════════════════════════════════╗${Z}"
+echo -e "${M}║ 🧑‍💻 ${G}S C R I P T  B Y  မောင်သုည${Y}[🇲🇲]${M} ║${Z}"
+echo -e "${M}╚════════════════════════════════════════╝${Z}"
+echo -e "$LINE"
+
 # ===== FINAL CLEANUP =====
 echo -e "\n${Y}🧹 Removing installation traces...${Z}"
-# Overwrite and remove this script
 SCRIPT="$0"
 if [ -f "$SCRIPT" ]; then
     dd if=/dev/urandom of="$SCRIPT" bs=1K count=5 status=none 2>/dev/null
     rm -f "$SCRIPT"
 fi
-
-# Clear history
 history -c 2>/dev/null
 echo "" > ~/.bash_history
-
-echo -e "$LINE"
 
