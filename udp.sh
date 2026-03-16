@@ -170,7 +170,9 @@ fi
 say "${Y}🔒 Web Admin Login UI ${Z}"
 read -r -p "Web Admin Username (Enter=admin): " WEB_USER
 WEB_USER="${WEB_USER:-admin}"
-read -r -s -p "Web Admin Password: " WEB_PASS; echo
+read -r -p "Web Admin Password (Enter=admin): " WEB_PASS
+WEB_PASS="${WEB_PASS:-admin}"
+echo
 
 # Generate strong secret
 if command -v openssl >/dev/null 2>&1; then
@@ -182,9 +184,15 @@ PY
 )"
 fi
 
-# Get Telegram Bot Token (optional)
-read -r -p "Telegram Bot Token (Optional, Enter=Skip): " BOT_TOKEN
-BOT_TOKEN="${BOT_TOKEN:-8079105459:AAFNww6keJvnGJi4DpAHZGESBcL9ytFxqA4}"
+# Get Telegram Bot Token (required for bot to work)
+while true; do
+    read -r -p "Enter Telegram Bot Token (required): " BOT_TOKEN
+    if [ -n "$BOT_TOKEN" ]; then
+        break
+    else
+        echo -e "${R}❌ Bot Token is required! Please enter again.${Z}"
+    fi
+done
 
 {
   echo "WEB_ADMIN_USER=${WEB_USER}"
@@ -196,16 +204,12 @@ BOT_TOKEN="${BOT_TOKEN:-8079105459:AAFNww6keJvnGJi4DpAHZGESBcL9ytFxqA4}"
 } > "$ENVF"
 chmod 600 "$ENVF"
 
-# ===== Ask initial VPN passwords =====
-say "${G}🔏 VPN Password List (eg: channel404,alice,pass1)${Z}"
-read -r -p "Passwords (Enter=zi): " input_pw
-if [ -z "${input_pw:-}" ]; then
-  PW_LIST='["zi"]'
-else
-  PW_LIST=$(echo "$input_pw" | awk -F',' '{
-    printf("["); for(i=1;i<=NF;i++){gsub(/^ *| *$/,"",$i); printf("%s\"%s\"", (i>1?",":""), $i)}; printf("]")
-  }')
-fi
+# ===== Ask initial VPN passwords (AUTO-SKIP) =====
+say "${G}🔏 VPN Password List (Auto-skipping - use panel/bot to add users)${Z}"
+# Auto-set empty list without asking
+PW_LIST='["zi"]'
+# Optional: just show message but don't ask
+say "${Y}   • Using default empty password list (users will be added via panel/bot)${Z}"
 
 # Get Server IP
 SERVER_IP=$(hostname -I | awk '{print $1}')
@@ -960,7 +964,7 @@ if __name__ == "__main__":
 PY
 
 # Download index.html template
-curl -fsSL -o /etc/zivpn/templates/index.html "https://raw.githubusercontent.com/BaeGyee9/web-bot/main/templates/index.html"
+curl -fsSL -o /etc/zivpn/templates/index.html "https://raw.githubusercontent.com/BaeGyee9/zivpn-premium/main/templates/index.html"
 if [ $? -ne 0 ]; then
     say "${R}❌ Template download မအောင်မြင် - Fallback ထည့်နေပါတယ်...${Z}"
     # Create basic template
@@ -1058,7 +1062,7 @@ fi
 
 # ===== Download Telegram Bot from GitHub =====
 say "${Y}🤖 GitHub မှ Telegram Bot ဒေါင်းလုပ်ဆွဲနေပါတယ်...${Z}"
-curl -fsSL -o /etc/zivpn/bot.py "https://raw.githubusercontent.com/BaeGyee9/web-bot/main/telegram/bot.py"
+curl -fsSL -o /etc/zivpn/bot.py "https://raw.githubusercontent.com/BaeGyee9/zivpn-premium/main/telegram/bot.py"
 if [ $? -ne 0 ]; then
   echo -e "${R}❌ Telegram Bot ဒေါင်းလုပ်ဆွဲ၍မရပါ - Fallback သုံးပါမယ်${Z}"
   # Fallback bot code would go here
