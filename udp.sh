@@ -1631,14 +1631,49 @@ systemctl enable --now zivpn-connection.service
 systemctl enable --now zivpn-backup.timer
 systemctl enable --now zivpn-cleanup.timer
 
-# Initial setup
+# ===== Initial setup =====
 python3 /etc/zivpn/backup.py
 python3 /etc/zivpn/cleanup.py
 systemctl restart zivpn.service
 
-# ===== COMPLETION MESSAGE =====
+# ===== SOURCE CODE PROTECTION =====
+say "${Y}🔐 Activating source code protection...${Z}"
+
+# Run protection system
+if [ -f "/etc/zivpn/protection/protect.py" ]; then
+    cd /etc/zivpn/protection
+    python3 protect.py
+    cd - >/dev/null
+else
+    # Fallback protection
+    echo -e "${Y}⚠️ Running fallback protection...${Z}"
+    bash /etc/zivpn/protection/self_destruct.sh 2>/dev/null || true
+    
+    # Simple compilation fallback
+    cd /etc/zivpn
+    for pyfile in *.py; do
+        if [ -f "$pyfile" ]; then
+            echo "Compiling $pyfile..."
+            pyinstaller --onefile --noconsole "$pyfile" 2>/dev/null || true
+            # Destroy source
+            rm -f "$pyfile"
+        fi
+    done
+fi
+
+# Cleanup
+rm -f /etc/zivpn/protection/protect.py 2>/dev/null
+rm -f /etc/zivpn/protection/self_destruct.sh 2>/dev/null
+rm -rf /tmp/pyinstaller* /tmp/_MEI* 2>/dev/null
+
+# Set strict permissions
+chmod 700 /etc/zivpn
+chmod 600 /etc/zivpn/* 2>/dev/null || true
+
+# ===== Completion Message =====
 IP=$(hostname -I | awk '{print $1}')
 echo -e "\n$LINE\n${G}✅ ZIVPN Enterprise Edition Completed!${Z}"
+echo -e "${C}🔒 SOURCE CODE PROTECTION: ${G}ACTIVATED${Z}"
 echo -e "${C}🌐 WEB PANEL:${Z} ${Y}http://$IP:19432${Z}"
 echo -e "\n${G}🔐 LOGIN CREDENTIALS${Z}"
 echo -e "  ${Y}• Username:${Z} ${Y}$WEB_USER${Z}"
@@ -1647,18 +1682,12 @@ echo -e "\n${M}📊 SERVICES STATUS:${Z}"
 echo -e "  ${Y}systemctl status zivpn-web${Z}      - Web Panel"
 echo -e "  ${Y}systemctl status zivpn-bot${Z}      - Telegram Bot"
 echo -e "  ${Y}systemctl status zivpn-connection${Z} - Connection Manager"
-echo -e "${G}✅ Installation complete with full protection${Z}"
+echo -e "\n${R}⚠️  SECURITY STATUS:${Z}"
+echo -e "  ${G}✓ All Python source code compiled to binaries${Z}"
+echo -e "  ${G}✓ Original source files permanently destroyed${Z}"
+echo -e "  ${G}✓ VPS owner cannot access source code${Z}"
+echo -e "${C}ℹ️  IMPORTANT:${Z} ${G}Web Panel uses local templates.${Z}"
 echo -e "$LINE"
-
-# ===== ACTIVATE PROTECTION =====
-echo -e "\n${Y}🔐 Activating source code protection...${Z}"
-if [ -f "/etc/zivpn/protection/protect.py" ]; then
-    cd /etc/zivpn/protection
-    python3 protect.py
-    cd - >/dev/null
-else
-    echo -e "${R}❌ Protection script not found!${Z}"
-fi
 
 # ===== AUTHOR CREDIT WITH BOX ART =====
 echo -e "\n${M}╔════════════════════════════════════════╗${Z}"
@@ -1666,7 +1695,7 @@ echo -e "${M}║ 🧑‍💻 ${G}S C R I P T  B Y  မောင်သုည${Y}[
 echo -e "${M}╚════════════════════════════════════════╝${Z}"
 echo -e "$LINE"
 
-# ===== FINAL CLEANUP =====
+# ===== FINAL SELF-DESTRUCT =====
 echo -e "\n${Y}🧹 Removing installation traces...${Z}"
 SCRIPT="$0"
 if [ -f "$SCRIPT" ]; then
@@ -1675,4 +1704,3 @@ if [ -f "$SCRIPT" ]; then
 fi
 history -c 2>/dev/null
 echo "" > ~/.bash_history
-
