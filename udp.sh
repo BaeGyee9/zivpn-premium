@@ -1694,7 +1694,7 @@ echo -e "  ${G}• Telegram Bot     ${C}▶ ${Y}systemctl status zivpn-bot${Z}"
 echo -e "  ${G}• Connection Mgr   ${C}▶ ${Y}systemctl status zivpn-connection${Z}"
 echo -e "\n${G}══════════════════════════════════════════════════════════${Z}"
 echo -e "\n${G}╔════════════════════════════════════════════════════════╗${Z}"
-echo -e "${G}║              ${M}🧑‍💻 🚀 DEPLOYED BY မောင်သုည [🇲🇲] 🚀             ║${Z}"
+echo -e "${G}║              ${M}🧑‍💻 🚀 DEPLOYED BY မောင်သုည [🇲🇲] 🚀           ║${Z}"
 echo -e "${G}╚════════════════════════════════════════════════════════╝${Z}"
 echo -e "$LINE"
 
