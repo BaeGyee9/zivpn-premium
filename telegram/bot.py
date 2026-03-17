@@ -710,6 +710,7 @@ def users_command(update, context):
         update.message.reply_text("❌ Admin only command")
         return
     
+    db = None
     try:
         db = get_db()
         
@@ -742,7 +743,6 @@ def users_command(update, context):
         
         if total_users == 0:
             update.message.reply_text("📭 No users found in database")
-            db.close()
             return
         
         # Get all users data with ordering
@@ -757,8 +757,6 @@ def users_command(update, context):
                 END,
                 username ASC
         ''').fetchall()
-        
-        db.close()
         
         server_ip = get_server_ip()
         
@@ -879,6 +877,10 @@ def users_command(update, context):
             f"3. Run <code>/stats</code> to test connection"
         )
         update.message.reply_text(error_msg, parse_mode='HTML')
+    
+    finally:
+        if db:
+            db.close()
 
 def myinfo_command(update, context):
     """Get user information with password - ADMIN ONLY"""
