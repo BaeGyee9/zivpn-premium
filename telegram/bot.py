@@ -715,14 +715,15 @@ def users_command(update, context):
         db = get_db()
         
         # ===== IMMEDIATE EXPIRED USER SUSPENSION =====
-        from datetime import datetime
-        today = datetime.now().date().strftime("%Y-%m-%d")
+        from datetime import datetime, date
+        today_str = date.today().strftime("%Y-%m-%d")
+        today_date = date.today()
         
         # Find expired active users
         expired_active = db.execute('''
             SELECT username FROM users 
             WHERE status = 'active' AND expires < ?
-        ''', (today,)).fetchall()
+        ''', (today_str,)).fetchall()
         
         # IMMEDIATELY suspend them
         suspended_count = 0
@@ -786,16 +787,6 @@ def users_command(update, context):
             chunk_message += f"<code>Users {start_idx + 1}-{end_idx}</code>\n\n"
             
             for user in chunk:
-                # Check if user is expired (for display only)
-                is_expired = False
-                if user['expires']:
-                    try:
-                        exp_date = datetime.strptime(user['expires'], '%Y-%m-%d')
-                        today_date = datetime.now().date()
-                        is_expired = exp_date.date() < today_date
-                    except:
-                        pass
-                
                 # Status icons based on ACTUAL database status
                 if user['status'] == 'active':
                     status_icon = "🟢"
@@ -822,16 +813,16 @@ def users_command(update, context):
                 
                 if user['expires']:
                     try:
-                        exp_date = datetime.strptime(user['expires'], '%Y-%m-%d')
-                        today_dt = datetime.now()
-                        days_left = (exp_date - today_dt).days
+                        exp_date = datetime.strptime(user['expires'], '%Y-%m-%d').date()
                         
-                        if days_left > 0:
-                            expires_info = f"⏰ Expires: {user['expires']} ({days_left} days)"
-                        elif days_left == 0:
+                        if exp_date < today_date:
+                            days_ago = (today_date - exp_date).days
+                            expires_info = f"❌ Expired: {user['expires']} ({days_ago} days ago)"
+                        elif exp_date == today_date:
                             expires_info = f"⚠️ Expires: {user['expires']} (TODAY!)"
                         else:
-                            expires_info = f"❌ Expired: {user['expires']} ({abs(days_left)} days ago)"
+                            days_left = (exp_date - today_date).days
+                            expires_info = f"⏰ Expires: {user['expires']} ({days_left} days)"
                     except:
                         expires_info = f"📅 Expires: {user['expires']}"
                     
