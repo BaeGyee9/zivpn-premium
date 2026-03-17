@@ -925,6 +925,113 @@ def myinfo_command(update, context):
     finally:
         db.close()
 
+def expired_command(update, context):
+    """Show only expired users - ADMIN ONLY"""
+    if not is_admin(update.effective_user.id):
+        update.message.reply_text("❌ Admin only command")
+        return
+    
+    db = None
+    try:
+        db = get_db()
+        
+        from datetime import datetime, date
+        today_str = date.today().strftime("%Y-%m-%d")
+        
+        # Get expired users only
+        expired_users = db.execute('''
+            SELECT username, password, status, expires, bandwidth_used, concurrent_conn
+            FROM users
+            WHERE expires < ?
+            ORDER BY expires DESC, username ASC
+        ''', (today_str,)).fetchall()
+        
+        if not expired_users:
+            update.message.reply_text("✅ No expired users found!")
+            return
+        
+        total_expired = len(expired_users)
+        
+        # Configuration
+        USERS_PER_CHUNK = 20
+        total_chunks = (total_expired + USERS_PER_CHUNK - 1) // USERS_PER_CHUNK
+        
+        # Send initial summary
+        update.message.reply_text(
+            f"<b>📊 EXPIRED USERS</b>\n"
+            f"👥 Total Expired: <b>{total_expired}</b>\n"
+            f"📤 Delivery: <b>{total_chunks} parts</b>\n"
+            f"⏳ Processing...",
+            parse_mode='HTML'
+        )
+        
+        # Send expired users in chunks
+        for chunk_index in range(total_chunks):
+            start_idx = chunk_index * USERS_PER_CHUNK
+            end_idx = min(start_idx + USERS_PER_CHUNK, total_expired)
+            chunk = expired_users[start_idx:end_idx]
+            
+            chunk_message = f"<b>PART {chunk_index + 1}/{total_chunks}</b>\n"
+            chunk_message += f"<code>Expired Users {start_idx + 1}-{end_idx}</code>\n\n"
+            
+            for user in chunk:
+                # Status icon
+                if user['status'] == 'suspended':
+                    status_icon = "🟡"
+                elif user['status'] == 'banned':
+                    status_icon = "🔴"
+                else:
+                    status_icon = "⚪"
+                
+                bandwidth_used = format_bytes(user['bandwidth_used'] or 0)
+                
+                chunk_message += f"{status_icon} <code>{user['username']}</code>\n"
+                chunk_message += f"• Password: <code>{user['password']}</code>\n"
+                chunk_message += f"• Status: {user['status'].upper()}\n"
+                chunk_message += f"• Bandwidth: {bandwidth_used}\n"
+                chunk_message += f"• Connections: {user['concurrent_conn']}\n"
+                
+                if user['expires']:
+                    try:
+                        exp_date = datetime.strptime(user['expires'], '%Y-%m-%d').date()
+                        today_date = date.today()
+                        days_ago = (today_date - exp_date).days
+                        expires_info = f"❌ Expired: {user['expires']} ({days_ago} days ago)"
+                    except:
+                        expires_info = f"📅 Expired: {user['expires']}"
+                    
+                    chunk_message += f"• {expires_info}\n"
+                
+                chunk_message += "─" * 24 + "\n"
+            
+            update.message.reply_text(chunk_message, parse_mode='HTML')
+            
+            if chunk_index < total_chunks - 1:
+                import time
+                time.sleep(0.3)
+        
+        # Completion message
+        completion_msg = (
+            f"<b>✅ EXPIRED USERS LIST COMPLETED</b>\n\n"
+            f"<b>📊 Statistics:</b>\n"
+            f"• Total Expired: {total_expired}\n"
+            f"• Chunks Sent: {total_chunks}\n\n"
+            f"<b>💡 Tips:</b>\n"
+            f"• Use <code>/users</code> for all users\n"
+            f"• Use <code>/myinfo username</code> for details"
+        )
+        update.message.reply_text(completion_msg, parse_mode='HTML')
+        
+        logger.info(f"✅ /expired command: {total_expired} expired users in {total_chunks} chunks")
+        
+    except Exception as e:
+        logger.error(f"❌ Error in /expired command: {e}")
+        update.message.reply_text("❌ Error retrieving expired users")
+    
+    finally:
+        if db:
+            db.close()
+
 def error_handler(update, context):
     """Log errors"""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
@@ -957,6 +1064,7 @@ def main():
         dp.add_handler(CommandHandler("reset", reset_command))
         dp.add_handler(CommandHandler("users", users_command))
         dp.add_handler(CommandHandler("myinfo", myinfo_command))
+        dp.add_handler(CommandHandler("expired", expired_command))
 
         dp.add_error_handler(error_handler)
 
