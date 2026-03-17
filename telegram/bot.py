@@ -150,6 +150,7 @@ def start(update, context):
 /reset <username> <days> - Reset expiry
 /users - List all users with passwords
 /myinfo <username> - User details with password
+/expired - List expired users with passwords
 """
     
     welcome_text += """
@@ -189,6 +190,7 @@ def help_command(update, context):
 /reset <username> <days> - Reset expiry
 /users - List all users with passwords
 /myinfo <username> - User details with password
+/expired - List expired users with passwords
 """
     
     help_text += """
